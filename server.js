@@ -7,6 +7,21 @@ const app = express();
 const PORT = 3141;
 const BOOKS_DIR = path.join(__dirname, 'books');
 const CERTS_DIR = path.join(__dirname, 'certs');
+const STATE_FILE = path.join(__dirname, 'state.json');
+
+function readState() {
+  try {
+    return JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+  } catch {
+    return { lastBook: null, textSize: 100, positions: {} };
+  }
+}
+
+function writeState(state) {
+  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+app.use(express.json());
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -16,6 +31,31 @@ app.use('/books', express.static(BOOKS_DIR));
 app.get('/api/books', (req, res) => {
   const files = fs.readdirSync(BOOKS_DIR).filter(f => f.endsWith('.epub'));
   res.json(files);
+});
+
+// API: get reading state (shared across all domains)
+app.get('/api/state', (req, res) => {
+  res.json(readState());
+});
+
+// API: update reading state (merges into existing)
+app.post('/api/state', (req, res) => {
+  const current = readState();
+  const update = req.body;
+
+  if (update.lastBook !== undefined) current.lastBook = update.lastBook;
+  if (update.textSize !== undefined) current.textSize = update.textSize;
+  if (update.positions) {
+    current.positions = { ...current.positions, ...update.positions };
+  }
+
+  writeState(current);
+  res.json(current);
+});
+
+// Catch-all: any unmatched route (e.g. reddit.com/r/programming) serves the app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // HTTPS on port 443 for blocked domains (via /etc/hosts)

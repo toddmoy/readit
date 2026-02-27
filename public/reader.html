@@ -10,7 +10,7 @@
 </head>
 <body class="reader-body">
   <nav class="reader-nav">
-    <a href="/" class="back-link" onclick="localStorage.removeItem('readit-last-book')">&larr; Library</a>
+    <a href="/" class="back-link" id="library-link">&larr; Library</a>
     <span id="book-title" class="book-title"></span>
     <div class="text-controls">
       <button id="text-smaller" class="text-btn" aria-label="Decrease text size">A&minus;</button>
@@ -33,22 +33,33 @@
       location.href = '/';
     }
 
-    localStorage.setItem('readit-last-book', filename);
+    function saveState(update) {
+      fetch('/api/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(update)
+      });
+    }
 
-    const storageKey = 'readit-pos-' + filename;
+    saveState({ lastBook: filename });
+
+    document.getElementById('library-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      saveState({ lastBook: null });
+      location.href = '/';
+    });
+
     const bookPath = '/books/' + encodeURIComponent(filename);
-
     const viewerEl = document.getElementById('viewer');
 
-    // Fetch the epub as an ArrayBuffer first, then load into epub.js
-    fetch(bookPath)
-      .then(res => {
+    Promise.all([
+      fetch(bookPath).then(res => {
         if (!res.ok) throw new Error('Failed to fetch book: ' + res.status);
-        console.log('Fetched book, size:', res.headers.get('content-length'));
         return res.arrayBuffer();
-      })
-      .then(buffer => {
-        console.log('ArrayBuffer size:', buffer.byteLength);
+      }),
+      fetch('/api/state').then(r => r.json())
+    ])
+      .then(([buffer, state]) => {
         const book = ePub(buffer);
         const rendition = book.renderTo(viewerEl, {
           width: viewerEl.offsetWidth,
@@ -56,38 +67,33 @@
           spread: 'none'
         });
 
-        // Resize when window changes
         window.addEventListener('resize', () => {
           rendition.resize(viewerEl.offsetWidth, viewerEl.offsetHeight);
         });
 
         book.ready.then(() => {
-          console.log('Book ready, spine length:', book.spine.length);
-          const savedCfi = localStorage.getItem(storageKey);
+          const savedCfi = state.positions[filename];
           return rendition.display(savedCfi || undefined);
         }).catch(err => console.error('Display error:', err));
 
-        // Save position on every relocation
         rendition.on('relocated', (location) => {
-          localStorage.setItem(storageKey, location.start.cfi);
+          saveState({ positions: { [filename]: location.start.cfi } });
         });
 
-        // Update title once metadata loads
         book.loaded.metadata.then(meta => {
           document.getElementById('book-title').textContent = meta.title || filename.replace(/\.epub$/i, '');
           document.title = meta.title || 'ReadIt';
         });
 
-        // Text size controls
         const sizes = [80, 90, 100, 110, 125, 150];
-        let sizeIndex = sizes.indexOf(parseInt(localStorage.getItem('readit-text-size')) || 100);
-        if (sizeIndex === -1) sizeIndex = 2; // default 100%
+        let sizeIndex = sizes.indexOf(state.textSize || 100);
+        if (sizeIndex === -1) sizeIndex = 2;
 
         function applyTextSize() {
           const pct = sizes[sizeIndex];
           rendition.themes.fontSize(pct + '%');
           document.getElementById('text-size-label').textContent = pct + '%';
-          localStorage.setItem('readit-text-size', pct);
+          saveState({ textSize: pct });
         }
 
         applyTextSize();
@@ -99,17 +105,14 @@
           if (sizeIndex < sizes.length - 1) { sizeIndex++; applyTextSize(); }
         });
 
-        // Navigation buttons
         document.getElementById('prev').addEventListener('click', () => rendition.prev());
         document.getElementById('next').addEventListener('click', () => rendition.next());
 
-        // Keyboard navigation
         document.addEventListener('keydown', (e) => {
           if (e.key === 'ArrowLeft') rendition.prev();
           if (e.key === 'ArrowRight') rendition.next();
         });
 
-        // Also handle keyboard events inside the epub iframe
         rendition.on('keydown', (e) => {
           if (e.key === 'ArrowLeft') rendition.prev();
           if (e.key === 'ArrowRight') rendition.next();
