@@ -45,6 +45,25 @@ npm run logs
 
 Drop `.epub` files into the `books/` folder. The reader remembers your position and text size.
 
+## Blocked domains
+
+Blocked domains are listed in `domains.txt` (one per line).
+
+```bash
+# Block a new domain (also adds www variant)
+npm run block -- tiktok.com
+
+# Unblock a domain
+npm run unblock -- tiktok.com
+```
+
+After adding new domains, regenerate certs to include them:
+
+```bash
+mkcert -cert-file certs/readit.pem -key-file certs/readit-key.pem \
+  readit.local localhost 127.0.0.1 $(cat domains.txt | tr '\n' ' ')
+```
+
 ## Uninstall
 
 ```bash
@@ -52,6 +71,3 @@ Drop `.epub` files into the `books/` folder. The reader remembers your position 
 npm run teardown
 ```
 
-## Blocked domains
-
-Edit `scripts/setup-hosts.sh` and `scripts/teardown-hosts.sh` to add or remove domains. If adding new domains, regenerate certs to include them.

@@ -1,19 +1,22 @@
 #!/bin/bash
-# Removes blocked sites from /etc/hosts
+# Removes readit.local and blocked domains (from domains.txt) from /etc/hosts
 
-DOMAINS=(
-  "readit.local"
-  "reddit.com"
-  "www.reddit.com"
-  "instagram.com"
-  "www.instagram.com"
-  "facebook.com"
-  "www.facebook.com"
-)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DOMAINS_FILE="$SCRIPT_DIR/../domains.txt"
+READER="readit.local"
 
-for domain in "${DOMAINS[@]}"; do
-  sudo sed -i '' "/^127\.0\.0\.1 ${domain//./\\.}$/d" /etc/hosts
-done
+# Remove reader domain
+sudo sed -i '' "/^127\.0\.0\.1 ${READER//./\\.}$/d" /etc/hosts
+
+# Remove blocked domains from domains.txt
+if [ -f "$DOMAINS_FILE" ]; then
+  while IFS= read -r domain || [ -n "$domain" ]; do
+    domain="$(echo "$domain" | xargs)"
+    [ -z "$domain" ] && continue
+    [[ "$domain" == \#* ]] && continue
+    sudo sed -i '' "/^127\.0\.0\.1 ${domain//./\\.}$/d" /etc/hosts
+  done < "$DOMAINS_FILE"
+fi
 
 sudo dscacheutil -flushcache
 sudo killall -HUP mDNSResponder 2>/dev/null
