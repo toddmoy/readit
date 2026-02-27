@@ -27,8 +27,17 @@ npm run setup
 ## Usage
 
 ```bash
-# Start the server (requires sudo for port 443)
+# Start in foreground
 npm start
+
+# Start in background (terminal can be closed)
+npm run start:bg
+
+# Stop background server
+npm run stop
+
+# View logs
+npm run logs
 
 # Open in browser
 # https://readit.local
