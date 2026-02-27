@@ -64,12 +64,28 @@ const tlsOpts = {
   cert: fs.readFileSync(path.join(CERTS_DIR, 'readit.pem')),
 };
 
-https.createServer(tlsOpts, app).listen(443, () => {
+const httpsServer = https.createServer(tlsOpts, app);
+httpsServer.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log('Port 443 is already in use — server is likely already running.');
+  } else {
+    throw err;
+  }
+});
+httpsServer.listen(443, () => {
   console.log('Listening on port 443 (blocked domains)');
 });
 
 // HTTP on port 3141 for direct access
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT);
+httpServer.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`Port ${PORT} is already in use — server is likely already running at https://readit.local`);
+  } else {
+    throw err;
+  }
+});
+httpServer.on('listening', () => {
   console.log(`ReadIt running at https://readit.local\n`);
 
   // Check /etc/hosts for domains routing to localhost
