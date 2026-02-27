@@ -7,7 +7,7 @@
     "start:bg": "sudo nohup node server.js > /tmp/readit.log 2>&1 & echo $! | sudo tee /tmp/readit.pid > /dev/null && echo 'ReadIt running in background (pid '$(cat /tmp/readit.pid)')'",
     "stop": "sudo kill $(cat /tmp/readit.pid 2>/dev/null) 2>/dev/null && rm -f /tmp/readit.pid && echo 'ReadIt stopped' || echo 'ReadIt is not running'",
     "logs": "tail -f /tmp/readit.log",
-    "setup": "bash scripts/setup-hosts.sh",
+    "setup": "bash scripts/init.sh && bash scripts/setup-hosts.sh",
     "teardown": "bash scripts/teardown-hosts.sh",
     "block": "bash scripts/manage-domain.sh block",
     "unblock": "bash scripts/manage-domain.sh unblock"
