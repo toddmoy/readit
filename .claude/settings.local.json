@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version:*)",
+      "Bash(npm view:*)",
+      "Bash(node -e:*)",
+      "Bash(mkcert:*)",
+      "Bash(npm --version:*)",
+      "Bash(brew list:*)",
+      "WebFetch(domain:deepwiki.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:unpkg.com)",
+      "WebFetch(domain:app.unpkg.com)",
+      "Bash(npm install:*)",
+      "Bash(chmod:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git -C /Users/toddmoy/Code/toddmoy/readit status -s)",
+      "Bash(git -C /Users/toddmoy/Code/toddmoy/readit diff)",
+      "Bash(git -C /Users/toddmoy/Code/toddmoy/readit log --oneline -5)",
+      "Bash(git -C /Users/toddmoy/Code/toddmoy/readit add README.md package.json)",
+      "Bash(git -C:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)"
+    ]
+  }
+}
