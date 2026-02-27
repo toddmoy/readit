@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadIt – Components</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/tailwind-setup.js"></script>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-5xl mx-auto px-6 pt-16 pb-20">
+
+    <div class="mb-12">
+      <a href="/" class="text-sm text-muted-foreground hover:text-foreground transition-colors">&larr; Back to library</a>
+      <h1 class="text-3xl font-bold tracking-tight text-foreground mt-4 mb-1">Components</h1>
+      <p class="text-sm text-muted-foreground">Book card variants and style reference.</p>
+    </div>
+
+    <section class="mb-16">
+      <h2 class="text-lg font-semibold text-foreground mb-1">Stack</h2>
+      <p class="text-sm text-muted-foreground mb-5">Cover image on top, title in a footer. Clean and simple.</p>
+      <div id="stack-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-lg font-semibold text-foreground mb-1">Overlay</h2>
+      <p class="text-sm text-muted-foreground mb-5">Cover fills the card. Title overlaid at the bottom with a gradient.</p>
+      <div id="overlay-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-lg font-semibold text-foreground mb-1">Typographic</h2>
+      <p class="text-sm text-muted-foreground mb-5">Title as the dominant design element. Bold type on colored ground with geometric accents.</p>
+      <div id="typographic-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-foreground mb-1">Mixed Grid</h2>
+      <p class="text-sm text-muted-foreground mb-5">Variants cycle automatically, as they appear in the library.</p>
+      <div id="mixed-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+  </div>
+
+  <script src="/cards.js"></script>
+  <script>
+    const sampleBooks = [
+      'Design-Systems.epub',
+      'The-Art-of-Code.epub',
+      'Creative-Confidence.epub',
+      'Thinking-in-Systems.epub',
+      'On-Typography.epub',
+      'Grid-Systems.epub',
+      'The-Visual-Display.epub',
+      'Universal-Principles.epub',
+      'Interaction-of-Color.epub',
+      'The-Elements-of-Style.epub',
+      'How-to-See.epub',
+      'Making-and-Breaking-the-Grid.epub',
+    ];
+
+    function populateGrid(containerId, variantName, count) {
+      const grid = document.getElementById(containerId);
+      for (let i = 0; i < count; i++) {
+        const hasSaved = i % 3 === 0;
+        const card = BookCards.createVariant(variantName, sampleBooks[i % sampleBooks.length], i, hasSaved);
+        card.addEventListener('click', (e) => e.preventDefault());
+        grid.appendChild(card);
+      }
+    }
+
+    function populateMixed(containerId, count) {
+      const grid = document.getElementById(containerId);
+      for (let i = 0; i < count; i++) {
+        const hasSaved = i % 4 === 0;
+        const card = BookCards.create(sampleBooks[i % sampleBooks.length], i, hasSaved);
+        card.addEventListener('click', (e) => e.preventDefault());
+        grid.appendChild(card);
+      }
+    }
+
+    populateGrid('stack-grid', 'stack', 4);
+    populateGrid('overlay-grid', 'overlay', 4);
+    populateGrid('typographic-grid', 'typographic', 4);
+    populateMixed('mixed-grid', 12);
+  </script>
+</body>
+</html>

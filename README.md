@@ -45,6 +45,8 @@ npm run logs
 
 Drop `.epub` files into the `books/` folder. The reader remembers your position and text size.
 
+View the [component library](http://localhost:3141/components.html) for book card variants and style reference.
+
 ## Blocked domains
 
 Blocked domains are listed in `domains.txt` (one per line).
