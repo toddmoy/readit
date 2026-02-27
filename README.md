@@ -1,6 +1,6 @@
 # ReadIt
 
-A local epub reader that replaces distracting websites. Type `readit.local` in your browser to read a book. Reddit, Instagram, and Facebook are blocked via `/etc/hosts`.
+A local epub reader that replaces distracting websites. Domains you choose are redirected to the reader, picking up where you left off. 
 
 ## Setup
 
