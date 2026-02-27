@@ -40,7 +40,7 @@ npm run stop
 npm run logs
 
 # Open in browser
-# https://readit.local
+# https://<blocked domain. try reddit.com>
 ```
 
 Drop `.epub` files into the `books/` folder. The reader remembers your position and text size.
