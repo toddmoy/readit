@@ -1,0 +1,13 @@
+{
+  "name": "readit",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "sudo node server.js",
+    "setup": "bash scripts/setup-hosts.sh",
+    "teardown": "bash scripts/teardown-hosts.sh"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}

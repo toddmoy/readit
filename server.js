@@ -1,0 +1,51 @@
+const fs = require('fs');
+const https = require('https');
+const path = require('path');
+const express = require('express');
+
+const app = express();
+const PORT = 3141;
+const BOOKS_DIR = path.join(__dirname, 'books');
+const CERTS_DIR = path.join(__dirname, 'certs');
+
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/books', express.static(BOOKS_DIR));
+
+// API: list available epub files
+app.get('/api/books', (req, res) => {
+  const files = fs.readdirSync(BOOKS_DIR).filter(f => f.endsWith('.epub'));
+  res.json(files);
+});
+
+// HTTPS on port 443 for blocked domains (via /etc/hosts)
+const tlsOpts = {
+  key: fs.readFileSync(path.join(CERTS_DIR, 'readit-key.pem')),
+  cert: fs.readFileSync(path.join(CERTS_DIR, 'readit.pem')),
+};
+
+https.createServer(tlsOpts, app).listen(443, () => {
+  console.log('Listening on port 443 (blocked domains)');
+});
+
+// HTTP on port 3141 for direct access
+app.listen(PORT, () => {
+  console.log(`ReadIt running at https://readit.local\n`);
+
+  // Check /etc/hosts for domains routing to localhost
+  try {
+    const hosts = fs.readFileSync('/etc/hosts', 'utf-8');
+    const blocked = hosts
+      .split('\n')
+      .filter(line => /^127\.0\.0\.1\s+/.test(line) && !line.includes('localhost') && !line.includes('readit.local'))
+      .map(line => line.split(/\s+/)[1]);
+
+    if (blocked.length > 0) {
+      console.log('Blocked domains:');
+      blocked.forEach(d => console.log(`  → ${d}`));
+      console.log('');
+    }
+  } catch (e) {
+    // ignore if hosts file can't be read
+  }
+});

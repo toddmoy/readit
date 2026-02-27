@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadIt</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+</head>
+<body class="reader-body">
+  <nav class="reader-nav">
+    <a href="/" class="back-link" onclick="localStorage.removeItem('readit-last-book')">&larr; Library</a>
+    <span id="book-title" class="book-title"></span>
+    <div class="text-controls">
+      <button id="text-smaller" class="text-btn" aria-label="Decrease text size">A&minus;</button>
+      <span id="text-size-label" class="text-size-label">100%</span>
+      <button id="text-larger" class="text-btn" aria-label="Increase text size">A+</button>
+    </div>
+  </nav>
+
+  <div class="reader-container">
+    <button id="prev" class="nav-btn nav-prev" aria-label="Previous page">&lsaquo;</button>
+    <div id="viewer"></div>
+    <button id="next" class="nav-btn nav-next" aria-label="Next page">&rsaquo;</button>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const filename = params.get('book');
+
+    if (!filename) {
+      location.href = '/';
+    }
+
+    localStorage.setItem('readit-last-book', filename);
+
+    const storageKey = 'readit-pos-' + filename;
+    const bookPath = '/books/' + encodeURIComponent(filename);
+
+    const viewerEl = document.getElementById('viewer');
+
+    // Fetch the epub as an ArrayBuffer first, then load into epub.js
+    fetch(bookPath)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch book: ' + res.status);
+        console.log('Fetched book, size:', res.headers.get('content-length'));
+        return res.arrayBuffer();
+      })
+      .then(buffer => {
+        console.log('ArrayBuffer size:', buffer.byteLength);
+        const book = ePub(buffer);
+        const rendition = book.renderTo(viewerEl, {
+          width: viewerEl.offsetWidth,
+          height: viewerEl.offsetHeight,
+          spread: 'none'
+        });
+
+        // Resize when window changes
+        window.addEventListener('resize', () => {
+          rendition.resize(viewerEl.offsetWidth, viewerEl.offsetHeight);
+        });
+
+        book.ready.then(() => {
+          console.log('Book ready, spine length:', book.spine.length);
+          const savedCfi = localStorage.getItem(storageKey);
+          return rendition.display(savedCfi || undefined);
+        }).catch(err => console.error('Display error:', err));
+
+        // Save position on every relocation
+        rendition.on('relocated', (location) => {
+          localStorage.setItem(storageKey, location.start.cfi);
+        });
+
+        // Update title once metadata loads
+        book.loaded.metadata.then(meta => {
+          document.getElementById('book-title').textContent = meta.title || filename.replace(/\.epub$/i, '');
+          document.title = meta.title || 'ReadIt';
+        });
+
+        // Text size controls
+        const sizes = [80, 90, 100, 110, 125, 150];
+        let sizeIndex = sizes.indexOf(parseInt(localStorage.getItem('readit-text-size')) || 100);
+        if (sizeIndex === -1) sizeIndex = 2; // default 100%
+
+        function applyTextSize() {
+          const pct = sizes[sizeIndex];
+          rendition.themes.fontSize(pct + '%');
+          document.getElementById('text-size-label').textContent = pct + '%';
+          localStorage.setItem('readit-text-size', pct);
+        }
+
+        applyTextSize();
+
+        document.getElementById('text-smaller').addEventListener('click', () => {
+          if (sizeIndex > 0) { sizeIndex--; applyTextSize(); }
+        });
+        document.getElementById('text-larger').addEventListener('click', () => {
+          if (sizeIndex < sizes.length - 1) { sizeIndex++; applyTextSize(); }
+        });
+
+        // Navigation buttons
+        document.getElementById('prev').addEventListener('click', () => rendition.prev());
+        document.getElementById('next').addEventListener('click', () => rendition.next());
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft') rendition.prev();
+          if (e.key === 'ArrowRight') rendition.next();
+        });
+
+        // Also handle keyboard events inside the epub iframe
+        rendition.on('keydown', (e) => {
+          if (e.key === 'ArrowLeft') rendition.prev();
+          if (e.key === 'ArrowRight') rendition.next();
+        });
+      })
+      .catch(err => console.error('Book load error:', err));
+  </script>
+</body>
+</html>

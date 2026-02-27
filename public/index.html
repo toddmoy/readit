@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadIt</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="picker">
+    <h1>ReadIt</h1>
+    <p class="subtitle">Pick up where you left off.</p>
+    <ul id="book-list"></ul>
+    <p id="empty" class="empty" hidden>No books found. Drop an <code>.epub</code> into the <code>books/</code> folder.</p>
+  </div>
+
+  <script>
+    // If there's a last-read book, go straight to it
+    const lastBook = localStorage.getItem('readit-last-book');
+    if (lastBook) {
+      location.href = '/reader.html?book=' + encodeURIComponent(lastBook);
+    }
+
+    async function loadBooks() {
+      const res = await fetch('/api/books');
+      const books = await res.json();
+      const list = document.getElementById('book-list');
+      const empty = document.getElementById('empty');
+
+      if (books.length === 0) {
+        empty.hidden = false;
+        return;
+      }
+
+      books.forEach(filename => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = '/reader.html?book=' + encodeURIComponent(filename);
+        a.textContent = filename.replace(/\.epub$/i, '');
+
+        // Show "Continue reading" if there's a saved position
+        const saved = localStorage.getItem('readit-pos-' + filename);
+        if (saved) {
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = 'Continue reading';
+          li.appendChild(a);
+          li.appendChild(badge);
+        } else {
+          li.appendChild(a);
+        }
+
+        list.appendChild(li);
+      });
+    }
+
+    loadBooks();
+  </script>
+</body>
+</html>
