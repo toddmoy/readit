@@ -1,6 +1,7 @@
 const fs = require('fs');
 const https = require('https');
 const path = require('path');
+const { execSync } = require('child_process');
 const express = require('express');
 
 const app = express();
@@ -8,6 +9,49 @@ const PORT = 3141;
 const BOOKS_DIR = path.join(__dirname, 'books');
 const CERTS_DIR = path.join(__dirname, 'certs');
 const STATE_FILE = path.join(__dirname, 'state.json');
+const DOMAINS_FILE = path.join(__dirname, 'domains.txt');
+const HOSTS_FILE = '/etc/hosts';
+
+function getDomainList() {
+  try {
+    return fs.readFileSync(DOMAINS_FILE, 'utf-8')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+  } catch {
+    return [];
+  }
+}
+
+function setupHosts() {
+  const hosts = fs.readFileSync(HOSTS_FILE, 'utf-8');
+  const entries = ['readit.local', ...getDomainList()];
+  const toAdd = entries.filter(domain => !hosts.includes(`127.0.0.1 ${domain}`));
+
+  if (toAdd.length > 0) {
+    const lines = toAdd.map(d => `127.0.0.1 ${d}`).join('\n');
+    fs.appendFileSync(HOSTS_FILE, '\n' + lines + '\n');
+  }
+
+  execSync('dscacheutil -flushcache && killall -HUP mDNSResponder', { stdio: 'ignore' });
+}
+
+function teardownHosts() {
+  const entries = ['readit.local', ...getDomainList()];
+  let hosts = fs.readFileSync(HOSTS_FILE, 'utf-8');
+
+  for (const domain of entries) {
+    const escaped = domain.replace(/\./g, '\\.');
+    const re = new RegExp(`^127\\.0\\.0\\.1\\s+${escaped}\\s*$`, 'gm');
+    hosts = hosts.replace(re, '');
+  }
+
+  // Clean up consecutive blank lines left behind
+  hosts = hosts.replace(/\n{3,}/g, '\n\n');
+  fs.writeFileSync(HOSTS_FILE, hosts);
+
+  execSync('dscacheutil -flushcache && killall -HUP mDNSResponder', { stdio: 'ignore' });
+}
 
 function readState() {
   try {
@@ -141,6 +185,17 @@ function printStartupBanner() {
   console.log(`  ${dim}Press Ctrl+C to stop${reset}`);
   console.log('');
 }
+
+// Block domains on startup
+setupHosts();
+
+// Clean up on exit
+function handleExit() {
+  teardownHosts();
+  process.exit();
+}
+process.on('SIGINT', handleExit);
+process.on('SIGTERM', handleExit);
 
 // HTTPS on port 443 for blocked domains (via /etc/hosts)
 const tlsOpts = {
