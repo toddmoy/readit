@@ -13,6 +13,9 @@
     "unblock": "bash scripts/manage-domain.sh unblock"
   },
   "dependencies": {
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "ink": "^3.2.0",
+    "ink-text-input": "^4.0.3",
+    "react": "^17.0.2"
   }
 }

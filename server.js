@@ -126,76 +126,14 @@ function formatBookName(filename) {
   return filename.replace(/\.epub$/, '').replace(/-/g, ' ');
 }
 
-function printStartupBanner() {
-  const dim = '\x1b[2m';
-  const bold = '\x1b[1m';
-  const reset = '\x1b[0m';
-
-  const books = getBooks();
-  const blocked = getBlockedDomains();
-
-  const label = (text) => `${dim}${text}${reset}`;
-  const pad = 10; // label column width
-
-  const lines = [];
-  lines.push(`${bold}ReadIt${reset}`);
-  lines.push(null); // separator
-  lines.push('');
-  lines.push(`${label('Address'.padEnd(pad))}https://readit.local`);
-  lines.push(`${label('Port 443'.padEnd(pad))}blocked domains (HTTPS)`);
-  lines.push(`${label(('Port ' + PORT).padEnd(pad))}direct access (HTTP)`);
-  lines.push('');
-  lines.push(`${label('Books'.padEnd(pad))}${dim}${BOOKS_DIR}${reset}`);
-  if (books.length > 0) {
-    books.forEach(b => lines.push(`${''.padEnd(pad)}${formatBookName(b)}`));
-  } else {
-    lines.push(`${''.padEnd(pad)}${dim}(none)${reset}`);
-  }
-  lines.push('');
-  lines.push(`${label('Blocked'.padEnd(pad))}${blocked.length > 0 ? blocked[0] : `${dim}(none)${reset}`}`);
-  if (blocked.length > 1) {
-    blocked.slice(1).forEach(d => lines.push(`${''.padEnd(pad)}${d}`));
-  }
-  lines.push('');
-
-  // Calculate box width from visible (non-ANSI) content
-  const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, '');
-  const contentWidth = Math.max(...lines.filter(l => l !== null).map(l => stripAnsi(l).length));
-  const innerWidth = contentWidth + 4; // 2 padding each side
-
-  const top = `┌${'─'.repeat(innerWidth)}┐`;
-  const bot = `└${'─'.repeat(innerWidth)}┘`;
-  const sep = `├${'─'.repeat(innerWidth)}┤`;
-  const row = (text) => {
-    const visible = stripAnsi(text).length;
-    const padding = innerWidth - 4 - visible;
-    return `│  ${text}${' '.repeat(Math.max(0, padding))}  │`;
-  };
-
-  console.log('');
-  console.log(top);
-  for (const line of lines) {
-    if (line === null) {
-      console.log(sep);
-    } else {
-      console.log(row(line));
-    }
-  }
-  console.log(bot);
-  console.log(`  ${dim}Press Ctrl+C to stop${reset}`);
-  console.log('');
-}
-
 // Block domains on startup
 setupHosts();
 
-// Clean up on exit
-function handleExit() {
+// Clean up on exit (SIGTERM for non-interactive shutdown; SIGINT handled by TUI)
+process.on('SIGTERM', () => {
   teardownHosts();
   process.exit();
-}
-process.on('SIGINT', handleExit);
-process.on('SIGTERM', handleExit);
+});
 
 // HTTPS on port 443 for blocked domains (via /etc/hosts)
 const tlsOpts = {
@@ -223,5 +161,19 @@ httpServer.on('error', (err) => {
   }
 });
 httpServer.on('listening', () => {
-  printStartupBanner();
+  require('./tui');
 });
+
+module.exports = {
+  setupHosts,
+  teardownHosts,
+  getDomainList,
+  getBlockedDomains,
+  getBooks,
+  formatBookName,
+  PORT,
+  BOOKS_DIR,
+  CERTS_DIR,
+  DOMAINS_FILE,
+  httpsServer,
+};
