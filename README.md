@@ -51,6 +51,14 @@ View the [component library](http://localhost:3141/components.html) for book car
 
 Blocked domains are listed in `domains.txt` (one per line).
 
+While the server is running in foreground (`npm start`), use the interactive TUI to manage domains:
+
+- **`a`** — add a domain (auto-adds `www.` variant, regenerates certs)
+- **`d`** — remove a domain (arrow keys to select)
+- **`q`** — quit and clean up `/etc/hosts`
+
+Domains can also be managed from the command line:
+
 ```bash
 # Block a new domain (also adds www variant)
 npm run block -- tiktok.com
@@ -59,12 +67,14 @@ npm run block -- tiktok.com
 npm run unblock -- tiktok.com
 ```
 
-After adding new domains, regenerate certs to include them:
+When using the CLI commands, regenerate certs to include the new domains:
 
 ```bash
 mkcert -cert-file certs/readit.pem -key-file certs/readit-key.pem \
   readit.local localhost 127.0.0.1 $(cat domains.txt | tr '\n' ' ')
 ```
+
+The interactive TUI handles cert regeneration automatically.
 
 ## Uninstall
 
